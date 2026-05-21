@@ -1,0 +1,50 @@
+# ===========================================================================
+# render.yaml - Render.com Blueprint (Infrastructure as Code)
+# ===========================================================================
+# ไฟล์นี้บอก Render ว่าต้องสร้าง service อะไรบ้าง
+# เมื่อเชื่อม GitHub repo กับ Render มันจะอ่านไฟล์นี้อัตโนมัติ
+#
+# วิธีใช้:
+# 1. Push โค้ดขึ้น GitHub
+# 2. ไปที่ https://render.com → New → Blueprint
+# 3. เชื่อม GitHub repo → Render จะอ่าน render.yaml นี้
+# 4. กด Apply → รอ deploy ~5 นาที
+# ===========================================================================
+
+services:
+  # --- Web Service (Backend API + Frontend) ---
+  - type: web
+    name: self-dev-app
+    runtime: python
+    region: singapore       # เลือก region ใกล้ไทย (ลด latency)
+
+    # Build Command: ติดตั้ง + build ทั้ง frontend + backend
+    buildCommand: |
+      cd frontend && npm install && npm run build && cd .. && cd backend && pip install -r requirements.txt
+
+    # Start Command: รัน FastAPI server
+    startCommand: cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT
+
+    # Environment Variables
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: self-dev-db
+          property: connectionURI
+      - key: GOOGLE_API_KEY
+        sync: false          # ต้องใส่ค่าเองใน Render Dashboard
+      - key: PYTHON_VERSION
+        value: "3.12.0"
+      - key: NODE_VERSION
+        value: "20.11.0"
+
+    # Health Check
+    healthCheckPath: /
+
+  # --- PostgreSQL Database ---
+databases:
+  - name: self-dev-db
+    region: singapore
+    plan: free              # Free tier (90 วัน แล้วต้องอัพเกรด)
+    databaseName: self_dev_db
+    user: self_dev_user

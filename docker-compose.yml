@@ -1,0 +1,79 @@
+# ===========================================================================
+# docker-compose.yml - Self-Development Web Application
+# ===========================================================================
+#
+# รันทั้งระบบ (Backend + Database) ด้วยคำสั่งเดียว:
+#
+#   docker compose up -d          ← รันเบื้องหลัง
+#   docker compose up             ← รันแบบเห็น logs
+#   docker compose down           ← หยุดทุก service
+#   docker compose logs -f api    ← ดู logs ของ backend
+#
+# หลังรัน:
+#   API:     http://localhost:8000
+#   Docs:    http://localhost:8000/docs
+#   DB:      localhost:5432
+# ===========================================================================
+
+services:
+  # -----------------------------------------------------------------------
+  # PostgreSQL Database
+  # -----------------------------------------------------------------------
+  db:
+    image: postgres:16-alpine
+    container_name: selfdev-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-self_dev_db}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      # Persistent data - ข้อมูลจะไม่หายแม้ลบ container
+      - postgres_data:/var/lib/postgresql/data
+      # รัน init script เมื่อสร้าง database ครั้งแรก
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-self_dev_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - selfdev-network
+
+  # -----------------------------------------------------------------------
+  # FastAPI Backend
+  # -----------------------------------------------------------------------
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: selfdev-api
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-self_dev_db}
+      GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+      APP_ENV: ${APP_ENV:-production}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy   # รอให้ DB พร้อมก่อนถึงจะเริ่ม
+    networks:
+      - selfdev-network
+
+# ---------------------------------------------------------------------------
+# Volumes - เก็บข้อมูลถาวร
+# ---------------------------------------------------------------------------
+volumes:
+  postgres_data:
+    driver: local
+
+# ---------------------------------------------------------------------------
+# Networks - ให้ containers คุยกันได้
+# ---------------------------------------------------------------------------
+networks:
+  selfdev-network:
+    driver: bridge

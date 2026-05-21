@@ -1,0 +1,34 @@
+# ===========================================================================
+# Self-Development Web Application - Backend Dependencies
+# ===========================================================================
+#
+# ติดตั้ง: pip install -r requirements.txt
+#
+# หมายเหตุ:
+# - psycopg2-binary ใช้สำหรับ development (ง่ายในการติดตั้ง)
+# - ใน production ควรใช้ psycopg2 (compile จาก source)
+# ===========================================================================
+
+# --- Web Framework ---
+fastapi==0.115.6           # FastAPI framework
+uvicorn[standard]==0.34.0  # ASGI server สำหรับรัน FastAPI
+
+# --- Database ---
+sqlalchemy==2.0.36         # ORM สำหรับ PostgreSQL
+psycopg2-binary==2.9.10   # PostgreSQL driver (binary version for dev)
+
+# --- Data Validation ---
+pydantic[email]==2.10.3    # Schema validation + email validator
+
+# --- AI Integration ---
+google-generativeai==0.8.4 # Google Gemini API client
+Pillow==11.1.0             # Image processing (สำหรับส่งรูปให้ AI)
+
+# --- Security (TODO: เพิ่มในขั้นตอน Authentication) ---
+# passlib[bcrypt]==1.7.4   # Password hashing
+# python-jose[cryptography]==3.3.0  # JWT tokens
+# python-multipart==0.0.17 # Form data parsing
+
+# --- Utilities ---
+python-dotenv==1.0.1       # โหลด .env file
+python-multipart==0.0.18   # สำหรับ file upload (UploadFile)
